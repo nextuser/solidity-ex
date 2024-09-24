@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../../../hardhat/ex2"
+		},
+		{
+			"path": "../../../../truffle/demo"
+		}
+	],
+	"settings": {}
+}
