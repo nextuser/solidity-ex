@@ -3,12 +3,12 @@ pragma solidity ^0.8.13;
 
 
 import {Test, console} from "forge-std/Test.sol";
-import {RMB} from "../src/My721.sol";
+import {My721} from "../src/My721.sol";
 import {NftDex} from "./mocks/NftDex.sol";
 import {NftNonReceiver} from "./mocks/NftNonReceiver.sol";
 
-contract M721Test is Test {
-    RMB public token;
+contract My721Test is Test {
+    My721 public token;
     string name = "Renminbi";
     string symbol = "RMB";
     string uri = "ipfs://tokesn/rmb/";
@@ -18,15 +18,18 @@ contract M721Test is Test {
     NftNonReceiver nftNonReceiver;
 
     function setUp() public {
-        token = new RMB(name,symbol,uri);
+        token = new My721(name,symbol,uri);
 
         console.log("minter",token.minter());
+
+        vm.startBroadcast();
         nftReceiver = new NftDex();
         nftNonReceiver = new NftNonReceiver();
        /// vm.broadcast();
 
         //vm.prank(token.minter());
         console.log("after broad cast minter",token.minter());
+        vm.stopBroadcast();
     }
 
 

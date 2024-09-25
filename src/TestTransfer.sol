@@ -14,8 +14,6 @@ contract TestTransfer{
     function sendOut(uint amount ) payable external{
         require(amount  <= address(this).balance, "insufficient balance");
         payable(tc).transfer(amount);
-       
-        ///TransferCount(payable(tc)).deposit{value:amount}();
     }
 
     receive() external payable {

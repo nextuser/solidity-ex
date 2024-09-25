@@ -11,7 +11,7 @@ contract TransferCount {
 
     }
     receive() external payable {
-       emit Log('receive',msg.sender,msg.value);
+       //emit Log('receive',msg.sender,msg.value);
     }
     fallback() external payable{
         fallbackCount ++;

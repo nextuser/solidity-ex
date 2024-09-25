@@ -8,7 +8,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
 import { console} from "forge-std/Test.sol";
 using Strings for uint256;
-contract RMB is 
+contract My721 is 
 
     IERC165,IERC721,
     IERC721Metadata,IERC721Enumerable{
