@@ -24,6 +24,7 @@ contract My721 is
     mapping(address => uint256[]) ownerTokens;
     // holder => ( spender => [tokenId] )
     mapping(address=>mapping(address=>uint256[]))  allowences;
+    error  ContractAddressNotERC721Receiver();
     
 
     error SenderIsNotOwnerError(address sender);
@@ -131,8 +132,10 @@ contract My721 is
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external{
 
         if(!_checkERC721Receiver(from,to,tokenId,data)){
-            revert("_checkERC721Receiver_failed");
+            console.log("check fail, call revert ContractAddressNotERC721Receiver");
+            revert ContractAddressNotERC721Receiver();
         }
+        console.log("begin transfer");
         _transferFrom(from,to,tokenId);        
     }
 
@@ -175,8 +178,11 @@ contract My721 is
      */
     function safeTransferFrom(address from, address to, uint256 tokenId) external{
         bool ret = _checkERC721Receiver(from,to,tokenId,bytes(""));
+        if(!ret) {
+            console.log("check fail, call revert ContractAddressNotERC721Receiver");
+            revert ContractAddressNotERC721Receiver();
+        }
         
-        require(ret,"_checkERC721Receiver failed");
         
         _transferFrom(from,to,tokenId);   
     }

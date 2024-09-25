@@ -25,9 +25,7 @@ contract My721Test is Test {
         vm.startBroadcast();
         nftReceiver = new NftDex();
         nftNonReceiver = new NftNonReceiver();
-       /// vm.broadcast();
 
-        //vm.prank(token.minter());
         console.log("after broad cast minter",token.minter());
         vm.stopBroadcast();
     }
@@ -66,9 +64,7 @@ contract My721Test is Test {
     }
 
     function testApprove() public{
-         for(uint i = 0 ; i< 18; ++i){
-            token.mint();
-        }
+        mintTokens(18);
         address minter = token.minter();
         assertEq(token.balanceOf(accountA),0);
         assertEq(token.balanceOf(minter),18);
@@ -95,29 +91,50 @@ contract My721Test is Test {
               
     }
 
-    function  testTransferContractNonReceiver() public {
-         for(uint i = 0 ; i< 18; ++i){
+    function mintTokens(uint256 n) internal {
+         for(uint256 i = 0 ; i< n; ++ i){
             token.mint();
         }
-       
+    }
+
+    function  testTransferContractNonReceiver() public {
+        mintTokens(18);
         assertEq(token.balanceOf(token.minter()),18);
         address addr = address(nftNonReceiver);
         assertEq(token.balanceOf(addr),0);
 
         console.log("address nftNonReceiver",addr);
-        vm.expectRevert(bytes("error message"));
+        assertFalse(token._checkERC721Receiver(token.minter(),addr,17,""));
+        ///vm.expectRevert(bytes("_checkERC721Receiver_failed"));
         //vm.startPrank(token.minter());
-        //token.safeTransferFrom(token.minter(),addr ,17);
-        assertTrue(token._checkERC721Receiver(token.minter(),addr,17,""),"error message");
+        vm.expectRevert(My721.ContractAddressNotERC721Receiver.selector);
+        token.safeTransferFrom(token.minter(),addr ,17);
+        
         //vm.stopPrank();
     }
 
 
+    function testLowLevelCallRevert() public {
+        vm.expectRevert(bytes("error message"));
+        (bool revertsAsExpected, ) = accountA.call("");
+        assertTrue(revertsAsExpected, "expectRevert: call did not revert");
+    }
+
+    function testApproveAll() public {
+        mintTokens(18);
+        token.setApprovalForAll(accountB, true);
+        assertTrue(token.isApprovedForAll(token.minter(),accountB));
+        vm.startPrank(accountB);
+        token.safeTransferFrom(token.minter(), accountA, 3);
+        assertEq(token.balanceOf(accountA),1);
+        assertEq(token.ownerOf(3),accountA);
+        
+        vm.stopPrank();
+    }
+
 
     function  testTransferNftDex() public {
-         for(uint i = 0 ; i< 18; ++i){
-            token.mint();
-        }
+        mintTokens(18);
        
         assertEq(token.balanceOf(token.minter()),18);
         address dex = address(nftReceiver);
