@@ -12,25 +12,45 @@ contract OwnerUpOnly {
         owner = msg.sender;
     }
 
-    function increment() external {
+    function checkParams() internal{
         if (msg.sender != owner) {
             revert Unauthorized();
         }
-        count++;
+    }
+    function increment() external {
+        count ++;
+        checkParams();
+        //count++;
+    }
+}
+
+contract Callee{
+    
+    function doNonZero(uint256 v) public {
+        require(v != 0, 'zero error');
+
     }
 }
 
 contract OwnerUpOnlyTest is Test {
     OwnerUpOnly upOnly;
+    Callee callee;
 
     function setUp() public {
         upOnly = new OwnerUpOnly();
+        callee = new Callee();
     }
 
     function testIncrementAsOwner() public {
         assertEq(upOnly.count(), 0);
         upOnly.increment();
         assertEq(upOnly.count(), 1);
+    }
+
+
+    function testRevertString() public {
+        vm.expectRevert('zero error');
+        callee.doNonZero(0);
     }
 
     

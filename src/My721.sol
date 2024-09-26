@@ -134,31 +134,31 @@ contract My721 is
      */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external{
 
-        require(_checkERC721Receiver(from,to,tokenId,data),"NonReceiver");
+        _checkERC721Receiver(from,to,tokenId,data);
             
         
-        console.log("begin transfer");
+        ///console.log("begin transfer");
         _transferFrom(from,to,tokenId);        
     }
 
     function isEOA(address to) public view returns (bool ret){
-
-        assembly {
-            ret := iszero(extcodesize(to))
-        }
-
+        return to.code.length == 0;
     }
 
 
-    function _checkERC721Receiver(address from,address to,uint tokenId, bytes memory data) public  returns (bool){
-       if(isEOA(to)){
-            return true;
+    function _checkERC721Receiver(address from,address to,uint tokenId, bytes memory data) public {
+       if(to.code.length == 0){
+            return ;
        } 
-       console.log("before onERC721Received");
-       bytes4 retSelector = IERC721Receiver(to).onERC721Received(to,from,tokenId,data);
-       console.log('after onERC721Received',uint256(uint32(retSelector)).toString(),
-                    uint256(uint32(IERC721Receiver.onERC721Received.selector)).toString());
-       return retSelector == IERC721Receiver.onERC721Received.selector;
+       try IERC721Receiver(to).onERC721Received(to,from,tokenId,data) returns (bytes4 retSelector){
+            console.log('try branch 1');
+            require(retSelector == IERC721Receiver.onERC721Received.selector,"selectorNotMatch");
+            
+       } catch(bytes memory code){
+            revert ContractAddressNotERC721Receiver();
+             console.log('catch branch 2');
+       }
+       
     }
 
     /**
@@ -178,12 +178,8 @@ contract My721 is
      * Emits a {Transfer} event.
      */
     function safeTransferFrom(address from, address to, uint256 tokenId) external{
-        bool ret = _checkERC721Receiver(from,to,tokenId,bytes(""));
-        if(!ret) {
-            console.log("check fail, call revert ContractAddressNotERC721Receiver");
-            revert ContractAddressNotERC721Receiver();
-        }
-        
+        _checkERC721Receiver(from,to,tokenId,bytes(""));
+      
         
         _transferFrom(from,to,tokenId);   
     }

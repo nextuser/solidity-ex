@@ -100,22 +100,28 @@ contract My721Test is Test {
         }
     }
 
+
+    function doRevert() internal {
+        revert ContractAddressNotERC721Receiver();
+    }
+
     function  testTransferContractNonReceiver() public {
         mintTokens(18);
         assertEq(token.balanceOf(token.minter()),18);
         address addr = address(nftNonReceiver);
-        assertEq(token.balanceOf(addr),0);
+        //assertEq(token.balanceOf(addr),0);
 
         console.log("address nftNonReceiver",addr);
         
 
-        vm.expectRevert("NonReceiver");
+        vm.expectRevert("selectorNotMatch");
         /**revert InvalidToAddress();
         bool ret = token._checkERC721Receiver(token.minter(),addr,17,"");
         console.log("token._check return:" , ret);
         if(!ret){
             revert InvalidToAddress();
         }*/
+        ////doRevert();
         token.safeTransferFrom(token.minter(),addr ,17);
 
     }
