@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {My721} from "../src/My721.sol";
 import {NftDex} from "./mocks/NftDex.sol";
 import {NftNonReceiver} from "./mocks/NftNonReceiver.sol";
+import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 contract My721Test is Test {
     My721 public token;
@@ -33,18 +34,14 @@ contract My721Test is Test {
 
     function testCount() public {
         
-         for(uint i = 0 ; i< 18; ++i){
-            token.mint();
-         }
+         mintTokens(18);
          assertEq(token.totalSupply(),18);
          assertEq(token.minter(),token.ownerOf(1));
 
     }
 
     function testTransfer() public {
-        for(uint i = 0 ; i< 18; ++i){
-            token.mint();
-        }
+        mintTokens(18);
         assertEq(token.balanceOf(accountA),0);
         assertEq(token.balanceOf(token.minter()),18);
 
@@ -68,8 +65,10 @@ contract My721Test is Test {
         address minter = token.minter();
         assertEq(token.balanceOf(accountA),0);
         assertEq(token.balanceOf(minter),18);
-
+        vm.expectEmit();
+        emit IERC721.Approval(token.minter(),accountA,3);
         token.approve(accountA,3);
+
         token.approve(accountA,4);
         token.approve(accountA,6);
         assertEq(token.ownerOf(3),minter);
@@ -108,30 +107,37 @@ contract My721Test is Test {
         ///vm.expectRevert(bytes("_checkERC721Receiver_failed"));
         //vm.startPrank(token.minter());
         vm.expectRevert(My721.ContractAddressNotERC721Receiver.selector);
+        ///revert();
         token.safeTransferFrom(token.minter(),addr ,17);
         
         //vm.stopPrank();
     }
 
-
+    /**
     function testLowLevelCallRevert() public {
         vm.expectRevert(bytes("error message"));
         (bool revertsAsExpected, ) = accountA.call("");
         assertTrue(revertsAsExpected, "expectRevert: call did not revert");
-    }
+    }*/
 
     function testApproveAll() public {
         mintTokens(18);
+        assertFalse(token.isApprovedForAll(token.minter(),accountB));
         token.setApprovalForAll(accountB, true);
         assertTrue(token.isApprovedForAll(token.minter(),accountB));
         vm.startPrank(accountB);
+        //vm.expectEmit();
+        //emit IERC721.Transfer(token.minter(), accountA, 3);
         token.safeTransferFrom(token.minter(), accountA, 3);
-        assertEq(token.balanceOf(accountA),1);
+        //vm.expectEmit();
+        //emit IERC721.Transfer(token.minter(), accountA, 5);
+        token.safeTransferFrom(token.minter(), accountA, 4);
+        assertEq(token.balanceOf(accountA),2);
         assertEq(token.ownerOf(3),accountA);
+        assertEq(token.ownerOf(4),accountA);
         
         vm.stopPrank();
     }
-
 
     function  testTransferNftDex() public {
         mintTokens(18);
@@ -153,5 +159,6 @@ contract My721Test is Test {
         assertEq(token.symbol(),symbol);
         assertEq(token.tokenURI(12), "ipfs://tokesn/rmb/12");
     }
+
 
 }

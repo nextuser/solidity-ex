@@ -23,7 +23,8 @@ contract My721 is
     mapping(uint256 => address ) tokenSpender;
     mapping(address => uint256[]) ownerTokens;
     // holder => ( spender => [tokenId] )
-    mapping(address=>mapping(address=>uint256[]))  allowences;
+    mapping(address=>mapping(address=>bool))  allowances;
+
     error  ContractAddressNotERC721Receiver();
     
 
@@ -228,14 +229,13 @@ contract My721 is
      */
     function _transferFrom(address from, address to, uint256 tokenId) internal {
         require(from != address(0) && to != address(0),"unsupport zero address");
-        require(tokenOwner[tokenId] == from,"tokenId owner is not equal from address" );
-        bool isOwner = false;
+        address owner = tokenOwner[tokenId];
+        require(owner == from,"tokenId owner is not equal from address" );
+        bool isOwner = msg.sender == owner;
         bool isSpender = false;
-        if(from == msg.sender){
-            isOwner = true;
-        }
-        else{
-            isSpender = tokenSpender[tokenId] == msg.sender;
+
+        if(!isOwner){
+            isSpender = tokenSpender[tokenId] == msg.sender || allowances[from][msg.sender];
         }
         
         if(!isOwner && !isSpender){
@@ -259,24 +259,8 @@ contract My721 is
         tokens.pop();
         
         emit Transfer(from,to,tokenId);
-
-        tokens = allowences[from][to];
-        if(tokens.length == 0){
-            return;
-        }
-
-        last = tokens.length -1;
-        for( uint256 i = 0;  i < last ; ++ i){
-            if(tokenId == tokens[i]){
-                tokens[i] = tokens[last];
-                tokens[last] = tokenId;
-                
-                break;
-            }
-        }
-        if(tokenId == tokens[last]){
-            tokens.pop();
-        }
+        console.log('emit transfer');
+      
 
     }
 
@@ -300,7 +284,6 @@ contract My721 is
         }
 
         tokenSpender[tokenId] = to;
-        allowences[msg.sender][to].push(tokenId);
         emit Approval(msg.sender, to, tokenId);
     }
 
@@ -316,23 +299,10 @@ contract My721 is
      */
     function setApprovalForAll(address operator, bool approved) external{
         require(operator != address(0));
-        uint256[] memory tokens = ownerTokens[msg.sender];
-        uint len = tokens.length;
-        for(uint i = 0; i < len; ++ i){
-            if(approved){
-                tokenSpender[tokens[i]] = operator;
-            }
-            else{
-                delete tokenSpender[tokens[i]];
-            }
-        }
 
-        if(approved){
-            allowences[msg.sender][operator] = tokens;
-        }
-        else if(allowences[msg.sender][operator].length > 0 ) {
-            allowences[msg.sender][operator] = new uint[](0);
-        }
+        bool oldValue = allowances[msg.sender][operator];
+        require(oldValue != approved, "approved status not changed");
+        allowances[msg.sender][operator] = approved;
 
         emit ApprovalForAll(msg.sender, operator,  approved);
     }
@@ -354,7 +324,7 @@ contract My721 is
      * See {setApprovalForAll}
      */
     function isApprovedForAll(address owner, address operator) external view returns (bool){
-        return allowences[owner][operator].length == ownerTokens[owner].length;
+        return allowances[owner][operator];
     }
 
 
