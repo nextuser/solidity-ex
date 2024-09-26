@@ -8,6 +8,8 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
 import { console} from "forge-std/Test.sol";
 using Strings for uint256;
+
+error  ContractAddressNotERC721Receiver();
 contract My721 is 
 
     IERC165,IERC721,
@@ -25,7 +27,7 @@ contract My721 is
     // holder => ( spender => [tokenId] )
     mapping(address=>mapping(address=>bool))  allowances;
 
-    error  ContractAddressNotERC721Receiver();
+
     
 
     error SenderIsNotOwnerError(address sender);
@@ -132,10 +134,9 @@ contract My721 is
      */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external{
 
-        if(!_checkERC721Receiver(from,to,tokenId,data)){
-            console.log("check fail, call revert ContractAddressNotERC721Receiver");
-            revert ContractAddressNotERC721Receiver();
-        }
+        require(_checkERC721Receiver(from,to,tokenId,data),"NonReceiver");
+            
+        
         console.log("begin transfer");
         _transferFrom(from,to,tokenId);        
     }
@@ -151,12 +152,11 @@ contract My721 is
 
     function _checkERC721Receiver(address from,address to,uint tokenId, bytes memory data) public  returns (bool){
        if(isEOA(to)){
-            console.log("is EOA");
             return true;
        } 
        console.log("before onERC721Received");
        bytes4 retSelector = IERC721Receiver(to).onERC721Received(to,from,tokenId,data);
-       console.log('onERC721Received',uint256(uint32(retSelector)).toString(),
+       console.log('after onERC721Received',uint256(uint32(retSelector)).toString(),
                     uint256(uint32(IERC721Receiver.onERC721Received.selector)).toString());
        return retSelector == IERC721Receiver.onERC721Received.selector;
     }

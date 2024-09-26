@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.10;
 
 
 import {Test, console} from "forge-std/Test.sol";
-import {My721} from "../src/My721.sol";
+import {ContractAddressNotERC721Receiver,My721} from "../src/My721.sol";
 import {NftDex} from "./mocks/NftDex.sol";
 import {NftNonReceiver} from "./mocks/NftNonReceiver.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 
+error InvalidToAddress();
 contract My721Test is Test {
     My721 public token;
     string name = "Renminbi";
@@ -65,11 +66,14 @@ contract My721Test is Test {
         address minter = token.minter();
         assertEq(token.balanceOf(accountA),0);
         assertEq(token.balanceOf(minter),18);
-        vm.expectEmit();
+        vm.expectEmit(true,true,true,false);
         emit IERC721.Approval(token.minter(),accountA,3);
         token.approve(accountA,3);
-
+        vm.expectEmit(true,true,true,false);
+        emit IERC721.Approval(token.minter(),accountA,4);
         token.approve(accountA,4);
+        vm.expectEmit(true,true,true,false);
+        emit IERC721.Approval(token.minter(),accountA,6);
         token.approve(accountA,6);
         assertEq(token.ownerOf(3),minter);
         assertEq(token.getApproved(3),accountA);
@@ -103,14 +107,17 @@ contract My721Test is Test {
         assertEq(token.balanceOf(addr),0);
 
         console.log("address nftNonReceiver",addr);
-        assertFalse(token._checkERC721Receiver(token.minter(),addr,17,""));
-        ///vm.expectRevert(bytes("_checkERC721Receiver_failed"));
-        //vm.startPrank(token.minter());
-        vm.expectRevert(My721.ContractAddressNotERC721Receiver.selector);
-        ///revert();
-        token.safeTransferFrom(token.minter(),addr ,17);
         
-        //vm.stopPrank();
+
+        vm.expectRevert("NonReceiver");
+        /**revert InvalidToAddress();
+        bool ret = token._checkERC721Receiver(token.minter(),addr,17,"");
+        console.log("token._check return:" , ret);
+        if(!ret){
+            revert InvalidToAddress();
+        }*/
+        token.safeTransferFrom(token.minter(),addr ,17);
+
     }
 
     /**
@@ -123,14 +130,18 @@ contract My721Test is Test {
     function testApproveAll() public {
         mintTokens(18);
         assertFalse(token.isApprovedForAll(token.minter(),accountB));
+        vm.expectEmit(true,true,false,false);
+        emit IERC721.ApprovalForAll(token.minter(),accountB,true);
         token.setApprovalForAll(accountB, true);
         assertTrue(token.isApprovedForAll(token.minter(),accountB));
+
+
         vm.startPrank(accountB);
-        //vm.expectEmit();
-        //emit IERC721.Transfer(token.minter(), accountA, 3);
+        vm.expectEmit(true,true,true,false);
+        emit IERC721.Transfer(token.minter(), accountA, 3);
         token.safeTransferFrom(token.minter(), accountA, 3);
-        //vm.expectEmit();
-        //emit IERC721.Transfer(token.minter(), accountA, 5);
+        vm.expectEmit(true,true,true,false);
+        emit IERC721.Transfer(token.minter(), accountA, 4);
         token.safeTransferFrom(token.minter(), accountA, 4);
         assertEq(token.balanceOf(accountA),2);
         assertEq(token.ownerOf(3),accountA);
